@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import type { DB } from '../db/index.js';
 import { comments } from '../db/schema.js';
 
-type Env = { Variables: { db: any } };
+type Env = { Variables: { db: DB } };
+
 const router = new Hono<Env>();
 
 const parseArticleId = (s: string) => {
@@ -18,9 +20,7 @@ const commentSchema = z.object({
   comment: z
     .string()
     .transform((s) => s.trim())
-    .refine((s) => s.length > 0, {
-      message: 'Comment cannot be empty'
-    })
+    .refine((s) => s.length > 0, { message: 'Comment cannot be empty' })
 });
 
 const paginationQuery = z.object({

@@ -1,18 +1,29 @@
-import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { cors } from 'hono/cors';
 
-const app = new Hono();
+import { db } from './db/index.js';
+import votesRouter from './routes/votes.js';
+import commentsRouter from './routes/comments.js';
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!');
+type Env = { Variables: { db: typeof db } };
+
+const app = new Hono<Env>();
+
+app.use('*', cors());
+
+app.use('*', async (c, next) => {
+  c.set('db', db);
+  await next();
 });
 
-serve(
-  {
-    fetch: app.fetch,
-    port: 3000
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
-  }
-);
+app.route('/', votesRouter);
+app.route('/', commentsRouter);
+
+app.get('/health', (c) => c.json({ ok: true }));
+
+app.notFound((c) => c.json({ error: 'Not Found' }, 404));
+
+const port = Number(process.env.PORT ?? 3000);
+console.log(`🚀 API on http://localhost:${port}`);
+serve({ fetch: app.fetch, port });
