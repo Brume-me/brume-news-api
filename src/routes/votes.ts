@@ -1,10 +1,9 @@
-// src/routes/votes.ts
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq, sql } from 'drizzle-orm';
 import type { DB } from '../db/index.js';
-import { articleVotes } from '../db/schema.js'; // adapte si différent
+import { articleVotes } from '../db/schema.js';
 
 type Env = { Variables: { db: DB } };
 
@@ -15,15 +14,9 @@ const voteSchema = z.object({
 
 const router = new Hono<Env>();
 
-const parseArticleId = (s: string) => {
-  const id = Number(s);
-  if (!Number.isInteger(id) || id <= 0) throw new Error('invalid-article-id');
-  return id;
-};
-
-router.get('/articles/:articleId/upvotes', async (c) => {
+router.get('/articles/:articleId/votes', async (c) => {
   const db = c.var.db;
-  const articleId = parseArticleId(c.req.param('articleId'));
+  const articleId = c.req.param('articleId');
 
   const rows = await db
     .select({
@@ -37,9 +30,9 @@ router.get('/articles/:articleId/upvotes', async (c) => {
   return c.json({ articleId, vote: rows });
 });
 
-router.post('/articles/:articleId/upvotes', zValidator('json', voteSchema), async (c) => {
+router.post('/articles/:articleId/votes', zValidator('json', voteSchema), async (c) => {
   const db = c.var.db;
-  const articleId = parseArticleId(c.req.param('articleId'));
+  const articleId = c.req.param('articleId');
   const { userHash, vote } = c.req.valid('json');
 
   if (vote === 'none') {
@@ -63,7 +56,7 @@ router.post('/articles/:articleId/upvotes', zValidator('json', voteSchema), asyn
       vote: articleVotes.vote
     });
 
-  return c.json({ upvote: res[0] }, 201);
+  return c.json({ vote: res[0] }, 201);
 });
 
 export default router;

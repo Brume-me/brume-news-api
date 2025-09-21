@@ -24,6 +24,6 @@ app.get('/health', (c) => c.json({ ok: true }));
 
 app.notFound((c) => c.json({ error: 'Not Found' }, 404));
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 3001);
 console.log(`🚀 API on http://localhost:${port}`);
 serve({ fetch: app.fetch, port });

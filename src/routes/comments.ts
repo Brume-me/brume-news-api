@@ -9,12 +9,6 @@ type Env = { Variables: { db: DB } };
 
 const router = new Hono<Env>();
 
-const parseArticleId = (s: string) => {
-  const id = Number(s);
-  if (!Number.isInteger(id) || id <= 0) throw new Error('invalid-article-id');
-  return id;
-};
-
 const commentSchema = z.object({
   userHash: z.string().min(8).max(255),
   comment: z
@@ -30,7 +24,7 @@ const paginationQuery = z.object({
 
 router.get('/articles/:articleId/comments', zValidator('query', paginationQuery), async (c) => {
   const db = c.var.db;
-  const articleId = parseArticleId(c.req.param('articleId'));
+  const articleId = c.req.param('articleId');
   const { page, pageSize } = c.req.valid('query');
   const offset = (page - 1) * pageSize;
 
@@ -58,7 +52,7 @@ router.get('/articles/:articleId/comments', zValidator('query', paginationQuery)
 
 router.post('/articles/:articleId/comments', zValidator('json', commentSchema), async (c) => {
   const db = c.var.db;
-  const articleId = parseArticleId(c.req.param('articleId'));
+  const articleId = c.req.param('articleId');
   const { userHash, comment } = c.req.valid('json');
 
   const res = await db.insert(comments).values({ articleId, userHash, comment }).returning({

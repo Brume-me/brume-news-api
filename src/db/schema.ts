@@ -7,7 +7,7 @@ export const articleVotes = pgTable(
   {
     id: serial('id').primaryKey(),
     vote: voteEnum('vote'),
-    articleId: integer('article_id').notNull(),
+    articleId: varchar('article_id').notNull(),
     userHash: varchar('user_hash', { length: 255 }).notNull()
   },
   (t) => ({
@@ -18,7 +18,7 @@ export const articleVotes = pgTable(
 export const comments = pgTable('comments', {
   id: serial('id').primaryKey(),
   comment: text('comment').notNull(),
-  articleId: integer('article_id').notNull(),
+  articleId: varchar('article_id').notNull(),
   userHash: varchar('user_hash', { length: 255 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });
