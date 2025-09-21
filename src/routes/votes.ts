@@ -27,7 +27,13 @@ router.get('/articles/:articleId/votes', async (c) => {
     .where(eq(articleVotes.articleId, articleId))
     .groupBy(articleVotes.vote);
 
-  return c.json({ articleId, votes: rows });
+  const votes: Record<string, number> = { upvote: 0, downvote: 0 };
+
+  rows.forEach((row) => {
+    if (row.vote) votes[row.vote] = Number(row.count);
+  });
+
+  return c.json({ articleId, votes });
 });
 
 router.post('/articles/:articleId/votes', zValidator('json', voteSchema), async (c) => {
