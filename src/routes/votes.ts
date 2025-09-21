@@ -9,32 +9,49 @@ type Env = { Variables: { db: DB } };
 
 const voteSchema = z.object({
   userHash: z.string().min(8).max(255),
-  vote: z.enum(['upvote', 'downvote'])
+  vote: z.enum(['upvote', 'downvote']).optional()
 });
 
 const router = new Hono<Env>();
 
-router.get('/articles/:articleId/votes', async (c) => {
-  const db = c.var.db;
-  const articleId = c.req.param('articleId');
+router.get(
+  '/articles/:articleId/votes',
+  zValidator('query', z.object({ userHash: z.string().min(8).max(255).optional() })),
+  async (c) => {
+    const db = c.var.db;
+    const articleId = c.req.param('articleId');
+    const { userHash } = c.req.valid('query');
 
-  const rows = await db
-    .select({
-      vote: articleVotes.vote,
-      count: sql<number>`count(*)`.as('count')
-    })
-    .from(articleVotes)
-    .where(eq(articleVotes.articleId, articleId))
-    .groupBy(articleVotes.vote);
+    const rows = await db
+      .select({
+        vote: articleVotes.vote,
+        count: sql<number>`count(*)`.as('count')
+      })
+      .from(articleVotes)
+      .where(eq(articleVotes.articleId, articleId))
+      .groupBy(articleVotes.vote);
 
-  const votes: Record<string, number> = { upvote: 0, downvote: 0 };
+    let upvotes = 0;
+    let downvotes = 0;
 
-  rows.forEach((row) => {
-    if (row.vote) votes[row.vote] = Number(row.count);
-  });
+    rows.forEach((row) => {
+      if (row.vote === 'upvote') upvotes = Number(row.count);
+      if (row.vote === 'downvote') downvotes = Number(row.count);
+    });
 
-  return c.json({ articleId, votes });
-});
+    let userVote = null;
+    if (userHash) {
+      const existing = await db
+        .select({ vote: articleVotes.vote })
+        .from(articleVotes)
+        .where(and(eq(articleVotes.articleId, articleId), eq(articleVotes.userHash, userHash)))
+        .limit(1);
+      if (existing.length) userVote = existing[0].vote;
+    }
+
+    return c.json({ articleId, upvotes, downvotes, userVote });
+  }
+);
 
 router.post('/articles/:articleId/votes', zValidator('json', voteSchema), async (c) => {
   const db = c.var.db;
