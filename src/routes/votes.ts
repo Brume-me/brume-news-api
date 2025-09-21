@@ -9,7 +9,7 @@ type Env = { Variables: { db: DB } };
 
 const voteSchema = z.object({
   userHash: z.string().min(8).max(255),
-  vote: z.enum(['upvote', 'downvote', 'none'])
+  vote: z.enum(['upvote', 'downvote'])
 });
 
 const router = new Hono<Env>();
@@ -27,7 +27,7 @@ router.get('/articles/:articleId/votes', async (c) => {
     .where(eq(articleVotes.articleId, articleId))
     .groupBy(articleVotes.vote);
 
-  return c.json({ articleId, vote: rows });
+  return c.json({ articleId, votes: rows });
 });
 
 router.post('/articles/:articleId/votes', zValidator('json', voteSchema), async (c) => {
@@ -35,7 +35,7 @@ router.post('/articles/:articleId/votes', zValidator('json', voteSchema), async 
   const articleId = c.req.param('articleId');
   const { userHash, vote } = c.req.valid('json');
 
-  if (vote === 'none') {
+  if (!vote) {
     await db
       .delete(articleVotes)
       .where(and(eq(articleVotes.articleId, articleId), eq(articleVotes.userHash, userHash)));
