@@ -1,21 +1,21 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { cors } from 'hono/cors';
 
 import { db } from './db/index.js';
 import votesRouter from './routes/votes.js';
 import commentsRouter from './routes/comments.js';
-
-type Env = { Variables: { db: typeof db } };
+import { withCors } from './middleware/cors.js';
+import { ensureAnonId } from './middleware/anon-id.js';
+import type { Env } from './types/env.js';
 
 const app = new Hono<Env>();
 
-app.use('*', cors());
-
+app.use('*', withCors);
 app.use('*', async (c, next) => {
   c.set('db', db);
   await next();
 });
+app.use('*', ensureAnonId);
 
 app.route('/', votesRouter);
 app.route('/', commentsRouter);

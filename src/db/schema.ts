@@ -8,10 +8,10 @@ export const articleVotes = pgTable(
     id: serial('id').primaryKey(),
     vote: voteEnum('vote'),
     articleId: varchar('article_id').notNull(),
-    userHash: varchar('user_hash', { length: 255 }).notNull()
+    anonId: varchar('anon_id', { length: 255 }).notNull()
   },
   (t) => ({
-    uqArticleUser: unique('article_votes_article_id_user_hash_uq').on(t.articleId, t.userHash)
+    uqArticleUser: unique('article_votes_article_id_user_hash_uq').on(t.articleId, t.anonId)
   })
 );
 
@@ -19,6 +19,6 @@ export const comments = pgTable('comments', {
   id: serial('id').primaryKey(),
   comment: text('comment').notNull(),
   articleId: varchar('article_id').notNull(),
-  userHash: varchar('user_hash', { length: 255 }).notNull(),
+  anonId: varchar('anon_id', { length: 255 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 });

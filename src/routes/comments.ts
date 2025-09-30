@@ -2,15 +2,12 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { eq, sql } from 'drizzle-orm';
-import type { DB } from '../db/index.js';
 import { comments } from '../db/schema.js';
-
-type Env = { Variables: { db: DB } };
+import type { Env } from '../types/env.js';
 
 const router = new Hono<Env>();
 
 const commentSchema = z.object({
-  userHash: z.string().min(8).max(255),
   comment: z
     .string()
     .transform((s) => s.trim())
@@ -32,7 +29,7 @@ router.get('/articles/:articleId/comments', zValidator('query', paginationQuery)
     .select({
       id: comments.id,
       articleId: comments.articleId,
-      userHash: comments.userHash,
+      anonId: comments.anonId,
       comment: comments.comment,
       createdAt: comments.createdAt
     })
@@ -53,12 +50,13 @@ router.get('/articles/:articleId/comments', zValidator('query', paginationQuery)
 router.post('/articles/:articleId/comments', zValidator('json', commentSchema), async (c) => {
   const db = c.var.db;
   const articleId = c.req.param('articleId');
-  const { userHash, comment } = c.req.valid('json');
+  const { comment } = c.req.valid('json');
+  const anonId = c.var.anonId;
 
-  const res = await db.insert(comments).values({ articleId, userHash, comment }).returning({
+  const res = await db.insert(comments).values({ articleId, anonId, comment }).returning({
     id: comments.id,
     articleId: comments.articleId,
-    userHash: comments.userHash,
+    anonId: comments.anonId,
     comment: comments.comment,
     createdAt: comments.createdAt
   });
